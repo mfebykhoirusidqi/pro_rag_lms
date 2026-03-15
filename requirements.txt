@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv
+langchain
+langchain-google-genai
+langchain-community
+langchain-chroma
+chromadb
+pypdf
+a2wsgi
+pysqlite3-binary; sys_platform == 'linux'
