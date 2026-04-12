@@ -1,12 +1,38 @@
+# ============================================================
+# requirements.txt
+# Pro LMS RAG API — Claude + Voyage AI + Pinecone
+# ============================================================
+
+# ── Web Framework ────────────────────────────────────────────
 fastapi
 uvicorn[standard]
 python-multipart
-python-dotenv
+
+# ── LangChain ────────────────────────────────────────────────
 langchain
-langchain-google-genai
+langchain-core
+langchain-text-splitters
 langchain-community
-langchain-chroma
-chromadb
+
+# ── Claude (Anthropic) ───────────────────────────────────────
+langchain-anthropic
+anthropic
+
+# ── Voyage AI Embedding ──────────────────────────────────────
+langchain-voyageai
+voyageai
+
+# ── Pinecone Vector Store ────────────────────────────────────
+langchain-pinecone
+pinecone
+
+# ── PDF Loader ───────────────────────────────────────────────
 pypdf
-a2wsgi
-pysqlite3-binary; sys_platform == 'linux'
+
+# ── Pydantic ─────────────────────────────────────────────────
+pydantic
+
+# ── Utilities ────────────────────────────────────────────────
+python-dotenv
+httpx
+tenacity

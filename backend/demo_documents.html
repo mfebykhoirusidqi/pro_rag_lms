@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pro LMS — Document Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg-primary:   #0a0c14;
+      --bg-secondary: #0f1220;
+      --bg-card:      #131829;
+      --bg-hover:     #1a2035;
+      --accent-1:     #6c63ff;
+      --accent-2:     #00d2ff;
+      --accent-3:     #ff6584;
+      --accent-4:     #43e97b;
+      --text-primary: #e8eaf6;
+      --text-muted:   #7986cb;
+      --border:       rgba(108,99,255,0.18);
+      --shadow:       0 8px 32px rgba(0,0,0,0.45);
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── Background glow ─── */
+    body::before {
+      content:'';
+      position:fixed; inset:0; z-index:0;
+      background:
+        radial-gradient(ellipse 60% 40% at 15% 20%, rgba(108,99,255,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 35% at 85% 75%, rgba(0,210,255,0.08) 0%, transparent 70%);
+      pointer-events:none;
+    }
+
+    .container { position:relative; z-index:1; max-width:1100px; margin:0 auto; padding:32px 20px; }
+
+    /* ─── Header ─── */
+    .header {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:36px; flex-wrap:wrap; gap:16px;
+    }
+    .logo {
+      display:flex; align-items:center; gap:14px;
+    }
+    .logo-icon {
+      width:46px; height:46px; border-radius:12px;
+      background:linear-gradient(135deg, var(--accent-1), var(--accent-2));
+      display:flex; align-items:center; justify-content:center;
+      font-size:22px; box-shadow:0 0 20px rgba(108,99,255,0.4);
+    }
+    .logo-text h1 { font-size:1.4rem; font-weight:700; letter-spacing:-0.3px; }
+    .logo-text p  { font-size:0.75rem; color:var(--text-muted); margin-top:2px; }
+
+    .api-badge {
+      font-family:'JetBrains Mono', monospace; font-size:0.72rem;
+      padding:7px 14px; border-radius:8px;
+      background:rgba(108,99,255,0.12); border:1px solid var(--border);
+      color:var(--accent-2); letter-spacing:0.3px;
+      display:flex; align-items:center; gap:8px;
+    }
+    .dot-live { width:7px; height:7px; border-radius:50%; background:var(--accent-4);
+      animation:pulse 1.8s ease-in-out infinite; }
+    @keyframes pulse {
+      0%,100%{ box-shadow:0 0 0 0 rgba(67,233,123,0.5); }
+      50%    { box-shadow:0 0 0 6px rgba(67,233,123,0); }
+    }
+
+    /* ─── Stats row ─── */
+    .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:16px; margin-bottom:28px; }
+    .stat-card {
+      background:var(--bg-card); border:1px solid var(--border); border-radius:14px;
+      padding:18px 20px; position:relative; overflow:hidden;
+      transition:transform .2s, box-shadow .2s;
+    }
+    .stat-card:hover { transform:translateY(-2px); box-shadow:var(--shadow); }
+    .stat-card::before {
+      content:''; position:absolute; inset:0; border-radius:14px;
+      background:linear-gradient(135deg, rgba(108,99,255,0.05), transparent);
+    }
+    .stat-label { font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px; }
+    .stat-value { font-size:1.9rem; font-weight:700; letter-spacing:-1px; }
+    .stat-value.purple { color:var(--accent-1); }
+    .stat-value.cyan   { color:var(--accent-2); }
+    .stat-value.green  { color:var(--accent-4); }
+    .stat-value.pink   { color:var(--accent-3); }
+    .stat-icon { position:absolute; right:16px; top:50%; transform:translateY(-50%); font-size:2rem; opacity:0.15; }
+
+    /* ─── Toolbar ─── */
+    .toolbar {
+      display:flex; align-items:center; gap:12px;
+      margin-bottom:20px; flex-wrap:wrap;
+    }
+    .search-box {
+      flex:1; min-width:200px; position:relative;
+    }
+    .search-box input {
+      width:100%; background:var(--bg-card); border:1px solid var(--border);
+      border-radius:10px; padding:10px 16px 10px 40px;
+      color:var(--text-primary); font-size:0.88rem; font-family:'Inter',sans-serif;
+      outline:none; transition:border-color .2s, box-shadow .2s;
+    }
+    .search-box input:focus { border-color:var(--accent-1); box-shadow:0 0 0 3px rgba(108,99,255,0.15); }
+    .search-box input::placeholder { color:var(--text-muted); }
+    .search-icon { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.9rem; }
+
+    .filter-select {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:10px; padding:10px 14px; color:var(--text-primary);
+      font-size:0.85rem; font-family:'Inter',sans-serif; outline:none; cursor:pointer;
+      transition:border-color .2s;
+    }
+    .filter-select:focus { border-color:var(--accent-1); }
+
+    .btn {
+      padding:10px 20px; border-radius:10px; border:none; cursor:pointer;
+      font-size:0.85rem; font-weight:600; font-family:'Inter',sans-serif;
+      transition:all .2s; display:flex; align-items:center; gap:6px;
+    }
+    .btn-primary {
+      background:linear-gradient(135deg,var(--accent-1),#8b5cf6);
+      color:#fff; box-shadow:0 4px 14px rgba(108,99,255,0.35);
+    }
+    .btn-primary:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(108,99,255,0.5); }
+    .btn-ghost {
+      background:transparent; color:var(--text-muted); border:1px solid var(--border);
+    }
+    .btn-ghost:hover { background:var(--bg-hover); color:var(--text-primary); }
+    .btn-danger {
+      background:rgba(255,101,132,0.12); color:var(--accent-3); border:1px solid rgba(255,101,132,0.25);
+    }
+    .btn-danger:hover { background:rgba(255,101,132,0.22); }
+    .btn-sm { padding:7px 14px; font-size:0.78rem; }
+
+    /* ─── Table ─── */
+    .table-wrap {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:16px; overflow:hidden; box-shadow:var(--shadow);
+    }
+    .table-header {
+      padding:18px 24px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .table-title { font-weight:600; font-size:0.95rem; display:flex; align-items:center; gap:8px; }
+    .count-badge {
+      font-size:0.72rem; background:rgba(108,99,255,0.18); color:var(--accent-1);
+      padding:3px 9px; border-radius:20px; font-weight:600;
+    }
+
+    table { width:100%; border-collapse:collapse; }
+    thead tr { background:rgba(108,99,255,0.06); }
+    th {
+      padding:13px 20px; text-align:left; font-size:0.72rem;
+      text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted);
+      font-weight:600; white-space:nowrap;
+    }
+    tbody tr {
+      border-top:1px solid rgba(108,99,255,0.08);
+      transition:background .15s; cursor:pointer;
+    }
+    tbody tr:hover { background:var(--bg-hover); }
+    td { padding:14px 20px; font-size:0.87rem; vertical-align:middle; }
+
+    .file-cell { display:flex; align-items:center; gap:12px; }
+    .file-icon {
+      width:36px; height:36px; border-radius:9px; flex-shrink:0;
+      background:linear-gradient(135deg,rgba(255,101,132,0.2),rgba(255,101,132,0.05));
+      border:1px solid rgba(255,101,132,0.2);
+      display:flex; align-items:center; justify-content:center; font-size:16px;
+    }
+    .file-name { font-weight:500; color:var(--text-primary); font-size:0.88rem; }
+    .file-size { font-size:0.75rem; color:var(--text-muted); margin-top:2px; }
+
+    .cat-badge {
+      display:inline-flex; align-items:center; gap:5px;
+      padding:4px 10px; border-radius:6px; font-size:0.75rem; font-weight:500;
+    }
+    .cat-mat   { background:rgba(108,99,255,0.15); color:#a78bfa; }
+    .cat-fis   { background:rgba(0,210,255,0.12); color:#60d9f8; }
+    .cat-stat  { background:rgba(67,233,123,0.12); color:#4ade80; }
+    .cat-prog  { background:rgba(255,165,0,0.12); color:#fb923c; }
+    .cat-umum  { background:rgba(255,101,132,0.12); color:#f87171; }
+
+    .chunk-bar-wrap { display:flex; align-items:center; gap:10px; }
+    .chunk-bar {
+      flex:1; max-width:100px; height:5px; border-radius:3px;
+      background:rgba(108,99,255,0.12); overflow:hidden;
+    }
+    .chunk-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--accent-1),var(--accent-2)); }
+    .chunk-num { font-family:'JetBrains Mono',monospace; font-size:0.82rem; color:var(--text-muted); }
+
+    .action-group { display:flex; gap:6px; }
+
+    /* ─── Modal ─── */
+    .modal-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0.7);
+      backdrop-filter:blur(6px); z-index:100;
+      display:flex; align-items:center; justify-content:center; padding:20px;
+      opacity:0; pointer-events:none; transition:opacity .25s;
+    }
+    .modal-overlay.active { opacity:1; pointer-events:all; }
+    .modal {
+      background:var(--bg-secondary); border:1px solid var(--border);
+      border-radius:20px; width:100%; max-width:680px; max-height:82vh;
+      display:flex; flex-direction:column;
+      box-shadow:0 24px 64px rgba(0,0,0,0.6);
+      transform:translateY(20px) scale(0.97); transition:transform .25s;
+    }
+    .modal-overlay.active .modal { transform:translateY(0) scale(1); }
+
+    .modal-head {
+      padding:22px 26px 18px; border-bottom:1px solid var(--border);
+      display:flex; align-items:flex-start; justify-content:space-between; gap:12px;
+    }
+    .modal-title { font-size:1.05rem; font-weight:700; display:flex; align-items:center; gap:10px; }
+    .modal-sub   { font-size:0.78rem; color:var(--text-muted); margin-top:4px; }
+
+    .close-btn {
+      width:32px; height:32px; border-radius:8px; border:none; cursor:pointer;
+      background:rgba(255,255,255,0.05); color:var(--text-muted); font-size:1rem;
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+      transition:background .2s, color .2s;
+    }
+    .close-btn:hover { background:var(--bg-hover); color:var(--text-primary); }
+
+    .modal-meta {
+      padding:14px 26px; display:flex; gap:20px; flex-wrap:wrap;
+      border-bottom:1px solid var(--border);
+    }
+    .meta-item { display:flex; flex-direction:column; gap:2px; }
+    .meta-label { font-size:0.68rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.6px; }
+    .meta-val   { font-size:0.88rem; font-weight:500; }
+
+    .modal-body { padding:20px 26px; overflow-y:auto; flex:1; }
+
+    .chunk-card {
+      background:var(--bg-card); border:1px solid rgba(108,99,255,0.1);
+      border-radius:12px; padding:14px 16px; margin-bottom:10px;
+      transition:border-color .2s; cursor:default;
+    }
+    .chunk-card:hover { border-color:rgba(108,99,255,0.35); }
+    .chunk-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+    .chunk-id   { font-family:'JetBrains Mono',monospace; font-size:0.7rem; color:var(--accent-2); opacity:.7; }
+    .page-tag   {
+      font-size:0.68rem; padding:2px 8px; border-radius:4px;
+      background:rgba(108,99,255,0.12); color:var(--accent-1);
+    }
+    .chunk-text { font-size:0.82rem; color:#b0b8d5; line-height:1.6; }
+
+    .no-data { padding:48px 24px; text-align:center; color:var(--text-muted); }
+    .no-data-icon { font-size:3rem; margin-bottom:12px; opacity:.4; }
+
+    /* ─── Toast ─── */
+    .toast-wrap { position:fixed; bottom:24px; right:24px; z-index:200; display:flex; flex-direction:column; gap:8px; }
+    .toast {
+      padding:12px 18px; border-radius:10px; font-size:0.84rem;
+      display:flex; align-items:center; gap:8px;
+      animation:slideIn .3s ease; box-shadow:0 8px 24px rgba(0,0,0,0.3);
+    }
+    .toast.success { background:#0f2a1d; border:1px solid rgba(67,233,123,0.3); color:var(--accent-4); }
+    .toast.error   { background:#2a0f14; border:1px solid rgba(255,101,132,0.3); color:var(--accent-3); }
+    .toast.info    { background:#0f1a2a; border:1px solid rgba(0,210,255,0.3); color:var(--accent-2); }
+    @keyframes slideIn { from{transform:translateX(30px);opacity:0} to{transform:translateX(0);opacity:1} }
+
+    /* ─── Spinner ─── */
+    .spinner {
+      width:18px; height:18px; border-radius:50%;
+      border:2px solid rgba(108,99,255,0.3); border-top-color:var(--accent-1);
+      animation:spin .7s linear infinite; display:inline-block;
+    }
+    @keyframes spin { to{transform:rotate(360deg)} }
+
+    /* ─── Scrollbar ─── */
+    ::-webkit-scrollbar      { width:6px; }
+    ::-webkit-scrollbar-track{ background: transparent; }
+    ::-webkit-scrollbar-thumb{ background:rgba(108,99,255,0.3); border-radius:3px; }
+    ::-webkit-scrollbar-thumb:hover{ background:rgba(108,99,255,0.5); }
+
+    /* ─── Empty state (no docs) ─── */
+    .empty-state {
+      padding:64px 24px; text-align:center;
+    }
+    .empty-state-icon { font-size:4rem; margin-bottom:16px; opacity:.3; }
+    .empty-state h3   { font-size:1.1rem; color:var(--text-muted); margin-bottom:6px; }
+    .empty-state p    { font-size:0.82rem; color:#4a5568; }
+
+    @media(max-width:640px){
+      th:nth-child(4), td:nth-child(4) { display:none; }
+      .modal { max-width:100%; margin:0; border-radius:14px 14px 0 0; position:fixed; bottom:0; max-height:90vh; }
+      .modal-overlay { align-items:flex-end; padding:0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ─── Header ─── -->
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">📚</div>
+      <div class="logo-text">
+        <h1>Pro LMS — Document Manager</h1>
+        <p>Knowledge Base via Pinecone Vector Store</p>
+      </div>
+    </div>
+    <div class="api-badge">
+      <span class="dot-live"></span>
+      GET /api/documents
+    </div>
+  </div>
+
+  <!-- ─── Stats ─── -->
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Total Dokumen</div>
+      <div class="stat-value purple" id="stat-total">—</div>
+      <div class="stat-icon">📄</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Chunks</div>
+      <div class="stat-value cyan" id="stat-chunks">—</div>
+      <div class="stat-icon">🧩</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Kategori Aktif</div>
+      <div class="stat-value green" id="stat-cats">—</div>
+      <div class="stat-icon">🏷️</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Index Pinecone</div>
+      <div class="stat-value pink" style="font-size:1rem;padding-top:6px">prolms-kb-voyage</div>
+      <div class="stat-icon">🗄️</div>
+    </div>
+  </div>
+
+  <!-- ─── Toolbar ─── -->
+  <div class="toolbar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input id="search-input" type="text" placeholder="Cari nama dokumen..." oninput="renderTable()"/>
+    </div>
+    <select class="filter-select" id="cat-filter" onchange="renderTable()">
+      <option value="">Semua Kategori</option>
+    </select>
+    <button class="btn btn-ghost btn-sm" onclick="loadDocuments()">⟳ Refresh</button>
+    <button class="btn btn-primary btn-sm" onclick="showToast('Fitur upload tersedia di endpoint /api/ingest', 'info')">+ Upload PDF</button>
+  </div>
+
+  <!-- ─── Table ─── -->
+  <div class="table-wrap">
+    <div class="table-header">
+      <div class="table-title">
+        📋 Daftar Dokumen
+        <span class="count-badge" id="doc-count">0 dokumen</span>
+      </div>
+      <div style="font-size:0.75rem;color:var(--text-muted)">Klik baris untuk lihat detail chunk</div>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Nama File</th>
+          <th>Kategori</th>
+          <th>Chunks</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="doc-tbody">
+        <tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted)">
+          <span class="spinner"></span> Memuat dokumen dari Pinecone...
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- /container -->
+
+<!-- ─── Detail Modal ─── -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">
+          <span>📄</span>
+          <span id="modal-filename">—</span>
+        </div>
+        <div class="modal-sub" id="modal-sub">GET /api/documents/{filename}</div>
+      </div>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-meta" id="modal-meta"></div>
+    <div class="modal-body" id="modal-body">
+      <div style="text-align:center;padding:32px;color:var(--text-muted)">
+        <span class="spinner"></span> Memuat chunks...
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Toast container ─── -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+// ─── Mock Data (simulasi response dari /api/documents) ───────────────────────
+const MOCK_DOCUMENTS = [
+  {
+    filename: "Kalkulus_Diferensial_Integral.pdf",
+    category: "matematika",
+    total_chunks: 47,
+    chunks: [
+      { chunk_id: "kalk-001", page: 1, text_preview: "Kalkulus adalah cabang matematika yang mempelajari perubahan. Diferensial membahas tentang laju perubahan suatu fungsi, sedangkan integral membahas tentang akumulasi..." },
+      { chunk_id: "kalk-002", page: 3, text_preview: "Limit adalah konsep fundamental dalam kalkulus. Limit fungsi f(x) ketika x mendekati a adalah nilai yang didekati oleh f(x) saat x semakin dekat ke a. Definisi formal: lim..." },
+      { chunk_id: "kalk-003", page: 7, text_preview: "Turunan (derivative) adalah laju perubahan sesaat suatu fungsi. Jika f(x) adalah suatu fungsi, maka turunannya f'(x) = lim [f(x+h) - f(x)] / h ketika h mendekati 0..." },
+      { chunk_id: "kalk-004", page: 12, text_preview: "Aturan rantai (chain rule): Jika y = f(g(x)), maka dy/dx = f'(g(x)) · g'(x). Contoh: jika y = sin(x²), maka dy/dx = cos(x²) · 2x = 2x·cos(x²)..." },
+      { chunk_id: "kalk-005", page: 18, text_preview: "Integral tak tentu adalah kebalikan dari diferensiasi. ∫f(x)dx = F(x) + C, di mana F'(x) = f(x) dan C adalah konstanta integrasi. Contoh: ∫x² dx = x³/3 + C..." },
+    ]
+  },
+  {
+    filename: "Fisika_Mekanika_Klasik.pdf",
+    category: "fisika",
+    total_chunks: 31,
+    chunks: [
+      { chunk_id: "fis-001", page: 2, text_preview: "Hukum Newton Pertama (Hukum Inersia): Sebuah benda akan tetap diam atau bergerak lurus beraturan selama tidak ada gaya luar yang bekerja padanya. Ini disebut prinsip inersia..." },
+      { chunk_id: "fis-002", page: 5, text_preview: "Hukum Newton Kedua: Percepatan benda sebanding dengan gaya neto yang bekerja dan berbanding terbalik dengan massa benda. F = m·a, di mana F adalah gaya (Newton), m adalah massa..." },
+      { chunk_id: "fis-003", page: 9, text_preview: "Energi kinetik adalah energi yang dimiliki benda karena geraknya. Ek = ½mv², di mana m adalah masa benda (kg) dan v adalah kecepatan benda (m/s). Energi ini selalu bernilai positif..." },
+    ]
+  },
+  {
+    filename: "Statistika_Inferensial.pdf",
+    category: "statistika",
+    total_chunks: 38,
+    chunks: [
+      { chunk_id: "stat-001", page: 1, text_preview: "Statistika inferensial adalah cabang statistika yang digunakan untuk menarik kesimpulan tentang populasi berdasarkan data sampel. Berbeda dengan statistika deskriptif yang hanya menggambarkan data..." },
+      { chunk_id: "stat-002", page: 6, text_preview: "Uji hipotesis adalah prosedur untuk membuat keputusan menggunakan data. Hipotesis nol (H₀) adalah pernyataan yang diuji, sedangkan hipotesis alternatif (H₁) adalah pernyataan yang diterima jika H₀ ditolak..." },
+      { chunk_id: "stat-003", page: 11, text_preview: "Distribusi normal (distribusi Gauss) adalah distribusi probabilitas yang sangat penting dalam statistika. Kurva berbentuk lonceng, simetris terhadap mean. Properti: mean = median = mode..." },
+      { chunk_id: "stat-004", page: 15, text_preview: "Regresi linear sederhana memodelkan hubungan antara satu variabel independen (X) dan satu variabel dependen (Y). Model: Ŷ = β₀ + β₁X + ε, di mana β₀ adalah intercept dan β₁ adalah slope..." },
+    ]
+  },
+  {
+    filename: "Algoritma_Pemrograman_Python.pdf",
+    category: "pemrograman",
+    total_chunks: 55,
+    chunks: [
+      { chunk_id: "prog-001", page: 1, text_preview: "Python adalah bahasa pemrograman tingkat tinggi yang mudah dipelajari dan serbaguna. Dibuat oleh Guido van Rossum pada tahun 1991. Python menggunakan indentasi untuk mendefinisikan blok kode..." },
+      { chunk_id: "prog-002", page: 4, text_preview: "Struktur data list di Python adalah koleksi terurut yang dapat diubah (mutable). List dapat berisi berbagai tipe data: numbers = [1, 2, 3], strings = ['a', 'b', 'c'], mixed = [1, 'hello', True]..." },
+      { chunk_id: "prog-003", page: 9, text_preview: "Fungsi dalam Python didefinisikan dengan kata kunci 'def'. Contoh: def hitung_luas(panjang, lebar): return panjang * lebar. Fungsi dapat memiliki parameter default dan mengembalikan multiple values..." },
+      { chunk_id: "prog-004", page: 14, text_preview: "Object-Oriented Programming (OOP) dalam Python menggunakan class. Class adalah blueprint untuk membuat objek. Konsep utama OOP: enkapsulasi, pewarisan (inheritance), dan polimorfisme..." },
+      { chunk_id: "prog-005", page: 21, text_preview: "Exception handling menggunakan try-except. try: operasi berisiko. except ValueError as e: tangani error. finally: blok yang selalu dieksekusi. Penting untuk menulis kode yang robust..." },
+    ]
+  },
+  {
+    filename: "Pengantar_Machine_Learning.pdf",
+    category: "umum",
+    total_chunks: 63,
+    chunks: [
+      { chunk_id: "ml-001", page: 1, text_preview: "Machine Learning adalah subset dari Artificial Intelligence yang memungkinkan sistem belajar dari data tanpa diprogram secara eksplisit. Tiga jenis utama: supervised learning, unsupervised learning..." },
+      { chunk_id: "ml-002", page: 5, text_preview: "Supervised learning menggunakan data berlabel untuk melatih model. Contoh: klasifikasi (prediksi kategori) dan regresi (prediksi nilai kontinu). Algoritma populer: Decision Tree, Random Forest, SVM..." },
+      { chunk_id: "ml-003", page: 10, text_preview: "Neural Network terinspirasi dari otak manusia. Terdiri dari lapisan-lapisan neuron: input layer, hidden layers, output layer. Setiap koneksi memiliki bobot (weight) yang dioptimalkan saat training..." },
+    ]
+  }
+];
+
+const CAT_CONFIG = {
+  matematika:   { cls:'cat-mat',  icon:'📐', label:'Matematika' },
+  fisika:       { cls:'cat-fis',  icon:'⚡', label:'Fisika' },
+  statistika:   { cls:'cat-stat', icon:'📊', label:'Statistika' },
+  pemrograman:  { cls:'cat-prog', icon:'💻', label:'Pemrograman' },
+  umum:         { cls:'cat-umum', icon:'📖', label:'Umum' },
+};
+
+let allDocs = [];
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  loadDocuments();
+  document.getElementById('detail-modal').addEventListener('click', function(e){
+    if(e.target === this) closeModal();
+  });
+});
+
+function loadDocuments() {
+  // Simulasi loading dari API
+  const tbody = document.getElementById('doc-tbody');
+  tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted)">
+    <span class="spinner"></span>&nbsp; Memuat dari <code style="color:var(--accent-2)">/api/documents</code>...
+  </td></tr>`;
+
+  setTimeout(() => {
+    allDocs = MOCK_DOCUMENTS;
+    buildCategoryFilter();
+    updateStats();
+    renderTable();
+    showToast('✅ ' + allDocs.length + ' dokumen berhasil dimuat dari Pinecone', 'success');
+  }, 900);
+}
+
+function buildCategoryFilter() {
+  const sel = document.getElementById('cat-filter');
+  const cats = [...new Set(allDocs.map(d => d.category))].sort();
+  sel.innerHTML = '<option value="">Semua Kategori</option>' +
+    cats.map(c => {
+      const cfg = CAT_CONFIG[c] || { icon:'📄', label:c };
+      return `<option value="${c}">${cfg.icon} ${cfg.label}</option>`;
+    }).join('');
+}
+
+function updateStats() {
+  const totalChunks = allDocs.reduce((s, d) => s + d.total_chunks, 0);
+  const cats = new Set(allDocs.map(d => d.category)).size;
+  animateCount('stat-total',  allDocs.length);
+  animateCount('stat-chunks', totalChunks);
+  animateCount('stat-cats',   cats);
+}
+
+function animateCount(id, target) {
+  const el = document.getElementById(id);
+  let cur = 0;
+  const step = Math.ceil(target / 30);
+  const t = setInterval(() => {
+    cur = Math.min(cur + step, target);
+    el.textContent = cur;
+    if(cur >= target) clearInterval(t);
+  }, 30);
+}
+
+function renderTable() {
+  const q   = document.getElementById('search-input').value.toLowerCase();
+  const cat = document.getElementById('cat-filter').value;
+  const filtered = allDocs.filter(d =>
+    (!q  || d.filename.toLowerCase().includes(q)) &&
+    (!cat || d.category === cat)
+  );
+
+  document.getElementById('doc-count').textContent = filtered.length + ' dokumen';
+  const tbody = document.getElementById('doc-tbody');
+
+  if(!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="4">
+      <div class="empty-state">
+        <div class="empty-state-icon">🔍</div>
+        <h3>Dokumen tidak ditemukan</h3>
+        <p>Coba ubah kata kunci atau filter kategori</p>
+      </div>
+    </td></tr>`;
+    return;
+  }
+
+  const maxChunks = Math.max(...filtered.map(d => d.total_chunks));
+
+  tbody.innerHTML = filtered.map(doc => {
+    const cfg  = CAT_CONFIG[doc.category] || { cls:'cat-umum', icon:'📄', label:doc.category };
+    const pct  = Math.round((doc.total_chunks / maxChunks) * 100);
+    return `
+    <tr onclick="openDetail('${doc.filename}')">
+      <td>
+        <div class="file-cell">
+          <div class="file-icon">📄</div>
+          <div>
+            <div class="file-name">${doc.filename}</div>
+            <div class="file-size">namespace: prolms</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <span class="cat-badge ${cfg.cls}">${cfg.icon} ${cfg.label}</span>
+      </td>
+      <td>
+        <div class="chunk-bar-wrap">
+          <div class="chunk-bar"><div class="chunk-fill" style="width:${pct}%"></div></div>
+          <span class="chunk-num">${doc.total_chunks}</span>
+        </div>
+      </td>
+      <td>
+        <div class="action-group" onclick="event.stopPropagation()">
+          <button class="btn btn-ghost btn-sm" onclick="openDetail('${doc.filename}')">🔍 Detail</button>
+          <button class="btn btn-danger btn-sm" onclick="confirmDelete('${doc.filename}')">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function openDetail(filename) {
+  const doc = allDocs.find(d => d.filename === filename);
+  if(!doc) return;
+  const cfg = CAT_CONFIG[doc.category] || { cls:'cat-umum', icon:'📄', label:doc.category };
+
+  document.getElementById('modal-filename').textContent = filename;
+  document.getElementById('modal-sub').textContent = `GET /api/documents/${encodeURIComponent(filename)}`;
+
+  document.getElementById('modal-meta').innerHTML = `
+    <div class="meta-item"><div class="meta-label">Kategori</div>
+      <div class="meta-val"><span class="cat-badge ${cfg.cls}">${cfg.icon} ${cfg.label}</span></div></div>
+    <div class="meta-item"><div class="meta-label">Total Chunks</div>
+      <div class="meta-val" style="color:var(--accent-1);font-family:'JetBrains Mono',monospace">${doc.total_chunks}</div></div>
+    <div class="meta-item"><div class="meta-label">Namespace</div>
+      <div class="meta-val" style="color:var(--accent-2);font-family:'JetBrains Mono',monospace">prolms</div></div>
+    <div class="meta-item"><div class="meta-label">Index</div>
+      <div class="meta-val" style="color:var(--text-muted);font-family:'JetBrains Mono',monospace">prolms-kb-voyage</div></div>
+  `;
+
+  const body = document.getElementById('modal-body');
+  body.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-muted)"><span class="spinner"></span> Mengambil chunks...</div>';
+
+  document.getElementById('detail-modal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  // Simulasi fetch detail
+  setTimeout(() => {
+    if(!doc.chunks || !doc.chunks.length) {
+      body.innerHTML = '<div class="no-data"><div class="no-data-icon">🔍</div><p>Tidak ada chunk ditemukan.</p></div>';
+      return;
+    }
+    body.innerHTML = doc.chunks.map((ch, i) => `
+      <div class="chunk-card" style="animation:fadeUp .3s ease ${i * 0.06}s both">
+        <div class="chunk-head">
+          <span class="chunk-id">${ch.chunk_id}</span>
+          ${ch.page !== null ? `<span class="page-tag">📄 Hlm. ${ch.page + 1}</span>` : '<span class="page-tag">—</span>'}
+        </div>
+        <div class="chunk-text">${ch.text_preview || '<em style="opacity:.5">Preview tidak tersedia</em>'}</div>
+      </div>
+    `).join('') + `
+      <div style="text-align:center;padding:16px 0 4px;font-size:0.75rem;color:var(--text-muted)">
+        Menampilkan ${doc.chunks.length} dari ${doc.total_chunks} chunk · field: <code style="color:var(--accent-2)">text_preview (200 char)</code>
+      </div>
+    `;
+  }, 500);
+}
+
+function closeModal() {
+  document.getElementById('detail-modal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function confirmDelete(filename) {
+  if(!confirm(`⚠️ Hapus semua vector dari "${filename}"?\n\nOperasi ini tidak bisa dibatalkan!`)) return;
+  allDocs = allDocs.filter(d => d.filename !== filename);
+  updateStats();
+  renderTable();
+  showToast(`🗑️ "${filename}" berhasil dihapus dari Pinecone`, 'error');
+}
+
+function showToast(msg, type = 'info') {
+  const wrap = document.getElementById('toast-wrap');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = msg;
+  wrap.appendChild(t);
+  setTimeout(() => t.remove(), 4000);
+}
+
+// Animasi chunk card
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(10px) }
+    to   { opacity:1; transform:translateY(0) }
+  }
+`;
+document.head.appendChild(style);
+</script>
+</body>
+</html>
